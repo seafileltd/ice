@@ -188,14 +188,17 @@ func mapFields(fields []string) map[string]uint16 {
 // computeNewDocCount determines how many documents will be in the newly
 // merged segment when obsoleted docs are dropped
 func computeNewDocCount(segments []*Segment, drops []*roaring.Bitmap) uint64 {
-	var newDocCount uint64
+	var newDocCount int64
 	for segI, seg := range segments {
-		newDocCount += seg.footer.numDocs
+		newDocCount += int64(seg.footer.numDocs)
 		if drops[segI] != nil {
-			newDocCount -= drops[segI].GetCardinality()
+			newDocCount -= int64(drops[segI].GetCardinality())
 		}
 	}
-	return newDocCount
+	if newDocCount < 0 {
+		panic("invalid newDocCount")
+	}
+	return uint64(newDocCount)
 }
 
 func persistMergedRest(segments []*Segment, dropsIn []*roaring.Bitmap,
